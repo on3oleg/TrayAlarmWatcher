@@ -96,58 +96,18 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         if (string.IsNullOrWhiteSpace(config.RegionId))
         {
-            await ResolveBuchaRegionAsync(config);
-        }
-
-        if (!string.IsNullOrWhiteSpace(config.RegionId))
-        {
-            await RefreshStatusAsync();
-        }
-    }
-
-    private async Task ResolveBuchaRegionAsync(AppConfig config)
-    {
-        try
-        {
-            var lookupService = new RegionLookupService(new RegionsApiClient(_httpClient));
-            var result = await lookupService.FindBuchaDistrictAsync(config.ApiKey);
-
-            if (result.Success)
-            {
-                config.RegionId = result.RegionId!;
-                config.Save();
-
-                _notifyIcon.ShowBalloonTip(
-                    5000,
-                    "TrayAlarmWatcher",
-                    $"Знайдено регіон \"{result.RegionName}\" ({result.RegionId}). Збережено в конфіг.",
-                    ToolTipIcon.Info);
-            }
-            else
-            {
-                _snapshot = new AlarmStatusSnapshot(AlarmStatus.Unknown, DateTime.Now, "район не знайдено");
-                UpdateUi();
-
-                _notifyIcon.ShowBalloonTip(
-                    8000,
-                    "TrayAlarmWatcher",
-                    $"Не вдалося знайти район \"Бучанськ\" у списку regions.\nПеревірте {AppConfig.RegionsLogFilePath} та вкажіть regionId вручну.",
-                    ToolTipIcon.Warning);
-            }
-        }
-        catch (Exception ex)
-        {
-            FileLogger.LogError($"Пошук regionId для Бучанського району провалився: {ex.Message}");
-
-            _snapshot = new AlarmStatusSnapshot(AlarmStatus.Unknown, DateTime.Now, ex.Message);
+            _snapshot = new AlarmStatusSnapshot(AlarmStatus.Unknown, DateTime.Now, "регіон не обрано");
             UpdateUi();
 
             _notifyIcon.ShowBalloonTip(
                 8000,
                 "TrayAlarmWatcher",
-                $"Помилка при отриманні списку regions: {ex.Message}",
-                ToolTipIcon.Error);
+                "Оберіть населений пункт для моніторингу: правою кнопкою на іконці → \"Обрати район/місто\".",
+                ToolTipIcon.Info);
+            return;
         }
+
+        await RefreshStatusAsync();
     }
 
     private async Task PrefetchRegionsTreeAsync(string apiKey)
@@ -182,7 +142,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         }
         else
         {
-            // Регіон міг бути автовизначений (Бучанський район) уже після побудови меню - синхронізуємо позначку.
+            // Регіон міг змінитися (напр. вибір з попереднього відкриття меню) - синхронізуємо позначку.
             UpdateRegionMenuChecks();
         }
 

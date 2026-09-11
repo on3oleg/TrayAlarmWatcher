@@ -11,7 +11,7 @@
 - **Спливаючі сповіщення** при зміні статусу — "Оголошено повітряну тривогу" / "Відбій повітряної тривоги"
 - **Стійкість до збоїв**: retry з backoff (30с → 60с → 120с) при мережевих помилках, окрема обробка HTTP 429 (rate limit) з урахуванням `Retry-After`
 - **Логування помилок** у `%AppData%\TrayAlarmWatcher\log.txt`
-- **Автовизначення `regionId`** при першому запуску, якщо конфіг ще порожній (типово — Бучанський район, як зручний дефолт; змінюється в будь-який момент через меню)
+- Якщо `regionId` ще не задано, застосунок при старті покаже підказку обрати регіон через меню (нічого не вгадує й не підставляє за замовчуванням)
 - **Автозапуск з Windows** через ключ реєстру `HKCU\...\Run` (вмикається/вимикається прямо з меню)
 - Публікується як **один самодостатній `.exe`** (self-contained single-file), без встановлення .NET SDK на цільовій машині
 
@@ -27,7 +27,7 @@
 ```
 
 - `apiKey` — ключ доступу до api.ukrainealarm.com (заголовок `Authorization`, без префікса `Bearer`)
-- `regionId` — ID області/району/громади зі списку [ukrainealarm.com](https://api.ukrainealarm.com). Можна не вказувати: якщо поле порожнє, застосунок при першому запуску сам підставить Бучанський район як дефолт. Змінити на будь-який інший регіон можна пізніше через меню трея "Обрати район/місто" — воно само збереже вибір сюди
+- `regionId` — ID області/району/громади зі списку [ukrainealarm.com](https://api.ukrainealarm.com). Можна не вказувати: якщо поле порожнє, застосунок при старті попросить обрати регіон через меню трея "Обрати район/місто" — воно само збереже вибір сюди. Змінити на інший регіон можна в будь-який момент так само
 
 Дивись [config.example.json](config.example.json) як шаблон. Файл `config.json` навмисно не потрапляє в git ([.gitignore](.gitignore)) — він містить секретний ключ.
 
@@ -56,10 +56,10 @@ dotnet publish TrayAlarmWatcher/TrayAlarmWatcher.csproj -c Release -r win-x64 --
 
 ```
 TrayAlarmWatcher/
-├── Api/                    # HTTP-клієнти до ukrainealarm.com (regions, alerts) і моделі відповідей
+├── Api/                    # HTTP-клієнти до ukrainealarm.com (regions, alerts), моделі відповідей, RegionLookupService
 ├── Configuration/          # AppConfig — читання/запис config.json
 ├── Models/                 # AlarmStatus, AlarmStatusSnapshot
-├── Services/                # RegionLookupService, AlarmStatusChecker (retry/backoff), AutoStartManager, FileLogger
+├── Services/                # AlarmStatusChecker (retry/backoff), AutoStartManager, FileLogger
 ├── Program.cs               # Точка входу (без консольного вікна)
 ├── TrayApplicationContext.cs # Головна логіка: ApplicationContext, NotifyIcon, меню, таймер опитування
 └── TrayIconFactory.cs        # Генерація іконок трею (GDI+, без файлів .ico)
