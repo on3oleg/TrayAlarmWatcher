@@ -24,11 +24,7 @@ public sealed class RegionLookupService
 
     public async Task<RegionLookupResult> FindBuchaDistrictAsync(string apiKey, CancellationToken cancellationToken = default)
     {
-        var rawJson = await _client.GetRegionsRawAsync(apiKey, cancellationToken);
-
-        LogRegionsForDiagnostics(rawJson);
-
-        var regions = JsonSerializer.Deserialize<RegionsResponse>(rawJson) ?? new RegionsResponse();
+        var regions = await FetchRegionsAsync(apiKey, cancellationToken);
 
         var match = regions.States
             .SelectMany(FlattenRegions)
@@ -39,6 +35,20 @@ public sealed class RegionLookupService
         return match is null
             ? RegionLookupResult.NotFound()
             : RegionLookupResult.Found(match.RegionId, match.RegionName);
+    }
+
+    /// <summary>Повне дерево область → район → громада, для меню ручного вибору регіону.</summary>
+    public async Task<List<Region>> GetStatesAsync(string apiKey, CancellationToken cancellationToken = default)
+    {
+        var regions = await FetchRegionsAsync(apiKey, cancellationToken);
+        return regions.States;
+    }
+
+    private async Task<RegionsResponse> FetchRegionsAsync(string apiKey, CancellationToken cancellationToken)
+    {
+        var rawJson = await _client.GetRegionsRawAsync(apiKey, cancellationToken);
+        LogRegionsForDiagnostics(rawJson);
+        return JsonSerializer.Deserialize<RegionsResponse>(rawJson) ?? new RegionsResponse();
     }
 
     private static IEnumerable<Region> FlattenRegions(Region region)
