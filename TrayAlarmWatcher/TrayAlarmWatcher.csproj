@@ -9,6 +9,15 @@
     <AssemblyName>TrayAlarmWatcher</AssemblyName>
     <RootNamespace>TrayAlarmWatcher</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+
+    <Product>TrayAlarmWatcher</Product>
+    <AssemblyTitle>Моніторинг повітряної тривоги в треї Windows</AssemblyTitle>
+    <Description>Трей-застосунок для моніторингу повітряної тривоги (api.ukrainealarm.com)</Description>
+    <Authors>on3oleg</Authors>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <NeutralLanguage>uk</NeutralLanguage>
   </PropertyGroup>
 
   <!-- Активується лише коли publish запускається з -p:PublishSingleFile=true; на dotnet build/run не впливає -->

@@ -293,7 +293,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private async Task RefreshStatusAsync()
     {
-        if (_isRefreshing || _config is null || string.IsNullOrWhiteSpace(_config.RegionId))
+        if (_isRefreshing || _config is null || !_config.IsValid)
         {
             return;
         }
