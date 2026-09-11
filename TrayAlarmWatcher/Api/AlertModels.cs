@@ -16,8 +16,9 @@ public sealed class AlertRegionModel
     [JsonPropertyName("lastUpdate")]
     public DateTime? LastUpdate { get; set; }
 
+    // API інколи повертає null замість порожнього масиву, коли активних тривог немає.
     [JsonPropertyName("activeAlerts")]
-    public List<AlertItem> ActiveAlerts { get; set; } = new();
+    public List<AlertItem>? ActiveAlerts { get; set; }
 }
 
 public sealed class AlertItem

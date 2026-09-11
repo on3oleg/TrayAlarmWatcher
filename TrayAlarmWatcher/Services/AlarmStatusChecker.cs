@@ -30,7 +30,7 @@ public sealed class AlarmStatusChecker
             try
             {
                 var regions = await _alertsApiClient.GetAlertsForRegionAsync(apiKey, regionId, cancellationToken);
-                var hasActiveAlert = regions.Any(r => r.ActiveAlerts.Count > 0);
+                var hasActiveAlert = regions.Any(r => r.ActiveAlerts is { Count: > 0 });
 
                 return new AlarmStatusSnapshot(
                     hasActiveAlert ? AlarmStatus.Alarm : AlarmStatus.Calm,
