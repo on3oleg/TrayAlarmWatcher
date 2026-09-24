@@ -17,6 +17,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly System.Windows.Forms.Timer _pollTimer;
 
     private readonly Icon _alarmIcon = TrayIconFactory.CreateAlarmIcon();
+    private readonly Icon _elevatedIcon = TrayIconFactory.CreateElevatedIcon();
     private readonly Icon _calmIcon = TrayIconFactory.CreateCalmIcon();
     private readonly Icon _unknownIcon = TrayIconFactory.CreateUnknownIcon();
 
@@ -28,7 +29,10 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private AlarmStatusSnapshot _snapshot = AlarmStatusSnapshot.InitialUnknown();
     private bool _isRefreshing;
-    private AlarmStatus? _lastConfirmedStatus;
+
+    // true від моменту, коли статус став Alarm, і до моменту повернення в Calm (навіть через Elevated) -
+    // визначає, чи потрібно надсилати "Відбій".
+    private bool _wasFullAlarm;
     private List<Region>? _cachedStates;
     private bool _isFetchingRegionsTree;
 
@@ -222,7 +226,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         _config.RegionId = region.RegionId;
         _config.Save();
-        _lastConfirmedStatus = null;
+        _wasFullAlarm = false;
 
         UpdateRegionMenuChecks();
 
@@ -277,23 +281,26 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void NotifyOnStatusChange(AlarmStatus newStatus)
     {
-        // Мережеві збої (Unknown) не вважаються підтвердженою зміною стану - не скидаємо
-        // й не сповіщаємо, щоб не було хибних "відбоїв"/"тривог" через тимчасову недоступність API.
+        // Мережеві збої (Unknown) не вважаються підтвердженою зміною стану - не сповіщаємо,
+        // щоб не було хибних "відбоїв"/"тривог" через тимчасову недоступність API.
         if (newStatus == AlarmStatus.Unknown)
         {
             return;
         }
 
-        if (newStatus == AlarmStatus.Alarm && _lastConfirmedStatus != AlarmStatus.Alarm)
+        // Elevated (Yellow) навмисно без власних сповіщень - лише інша іконка. _wasFullAlarm
+        // при цьому не скидається, тому "Відбій" все одно спрацює, навіть якщо тривога спершу
+        // понизилась до Yellow, а вже потім до Calm.
+        if (newStatus == AlarmStatus.Alarm && !_wasFullAlarm)
         {
             _notifyIcon.ShowBalloonTip(10000, "TrayAlarmWatcher", "Оголошено повітряну тривогу", ToolTipIcon.Warning);
+            _wasFullAlarm = true;
         }
-        else if (newStatus == AlarmStatus.Calm && _lastConfirmedStatus == AlarmStatus.Alarm)
+        else if (newStatus == AlarmStatus.Calm && _wasFullAlarm)
         {
             _notifyIcon.ShowBalloonTip(10000, "TrayAlarmWatcher", "Відбій повітряної тривоги", ToolTipIcon.Info);
+            _wasFullAlarm = false;
         }
-
-        _lastConfirmedStatus = newStatus;
     }
 
     private void UpdateUi()
@@ -303,6 +310,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         var (icon, statusText) = _snapshot.Status switch
         {
             AlarmStatus.Alarm => (_alarmIcon, "Тривога"),
+            AlarmStatus.Elevated => (_elevatedIcon, "Підвищена небезпека"),
             AlarmStatus.Calm => (_calmIcon, "Спокійно"),
             _ => (_unknownIcon, _snapshot.ErrorMessage is null ? "Невідомо" : $"Невідомо ({_snapshot.ErrorMessage})")
         };
@@ -326,6 +334,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _notifyIcon.Dispose();
         _httpClient.Dispose();
         _alarmIcon.Dispose();
+        _elevatedIcon.Dispose();
         _calmIcon.Dispose();
         _unknownIcon.Dispose();
         Application.Exit();

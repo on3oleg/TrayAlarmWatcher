@@ -30,12 +30,9 @@ public sealed class AlarmStatusChecker
             try
             {
                 var regions = await _alertsApiClient.GetAlertsForRegionAsync(apiKey, regionId, cancellationToken);
-                var hasActiveAlert = regions.Any(r => r.ActiveAlerts is { Count: > 0 });
+                var status = DetermineStatus(regions);
 
-                return new AlarmStatusSnapshot(
-                    hasActiveAlert ? AlarmStatus.Alarm : AlarmStatus.Calm,
-                    DateTime.Now,
-                    null);
+                return new AlarmStatusSnapshot(status, DateTime.Now, null);
             }
             catch (OperationCanceledException)
             {
@@ -56,6 +53,33 @@ public sealed class AlarmStatusChecker
 
         FileLogger.LogError($"Усі спроби перевірки статусу тривоги (regionId={regionId}) провалились: {lastError?.Message}");
         return new AlarmStatusSnapshot(AlarmStatus.Unknown, DateTime.Now, lastError?.Message);
+    }
+
+    private static AlarmStatus DetermineStatus(List<AlertRegionModel> regions)
+    {
+        var activeAlerts = regions.SelectMany(r => r.ActiveAlerts ?? Enumerable.Empty<AlertItem>()).ToList();
+        if (activeAlerts.Count == 0)
+        {
+            return AlarmStatus.Calm;
+        }
+
+        var levels = activeAlerts
+            .SelectMany(a => a.ActiveAlertLevels ?? Enumerable.Empty<AlertLevelWithReason>())
+            .Select(l => l.AlertLevel)
+            .ToList();
+
+        if (levels.Any(l => string.Equals(l, "Red", StringComparison.OrdinalIgnoreCase)))
+        {
+            return AlarmStatus.Alarm;
+        }
+
+        if (levels.Any(l => string.Equals(l, "Yellow", StringComparison.OrdinalIgnoreCase)))
+        {
+            return AlarmStatus.Elevated;
+        }
+
+        // Є активний алерт, але без деталізації рівня - обираємо консервативний варіант (повна тривога).
+        return AlarmStatus.Alarm;
     }
 
     private static TimeSpan GetRetryDelay(Exception ex, TimeSpan defaultDelay)

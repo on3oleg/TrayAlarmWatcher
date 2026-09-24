@@ -8,6 +8,8 @@ internal static class TrayIconFactory
 
     public static Icon CreateAlarmIcon() => CreateCircleIcon(Color.FromArgb(220, 38, 38), null);
 
+    public static Icon CreateElevatedIcon() => CreateCircleIcon(Color.FromArgb(234, 179, 8), null);
+
     public static Icon CreateCalmIcon() => CreateCircleIcon(Color.FromArgb(46, 160, 67), null);
 
     public static Icon CreateUnknownIcon() => CreateCircleIcon(Color.FromArgb(130, 130, 130), "?");

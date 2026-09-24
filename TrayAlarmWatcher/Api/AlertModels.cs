@@ -34,4 +34,21 @@ public sealed class AlertItem
 
     [JsonPropertyName("lastUpdate")]
     public DateTime? LastUpdate { get; set; }
+
+    // Може бути null, коли API не надає деталізації рівня для цього алерту.
+    [JsonPropertyName("activeAlertLevels")]
+    public List<AlertLevelWithReason>? ActiveAlertLevels { get; set; }
+}
+
+public sealed class AlertLevelWithReason
+{
+    // Enum "AlertLevel" у API: "Red" | "Yellow".
+    [JsonPropertyName("alertLevel")]
+    public string AlertLevel { get; set; } = string.Empty;
+
+    [JsonPropertyName("reason")]
+    public string? Reason { get; set; }
+
+    [JsonPropertyName("createdAt")]
+    public DateTime? CreatedAt { get; set; }
 }
