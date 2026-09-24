@@ -10,8 +10,8 @@
     <RootNamespace>TrayAlarmWatcher</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
 
-    <Product>TrayAlarmWatcher</Product>
-    <AssemblyTitle>Моніторинг повітряної тривоги в треї Windows</AssemblyTitle>
+    <Product>Alerts monitor</Product>
+    <AssemblyTitle>Alerts monitor</AssemblyTitle>
     <Description>Трей-застосунок для моніторингу повітряної тривоги (api.ukrainealarm.com)</Description>
     <Authors>on3oleg</Authors>
     <Version>1.0.0</Version>

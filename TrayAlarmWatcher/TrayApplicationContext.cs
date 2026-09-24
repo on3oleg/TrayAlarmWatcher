@@ -10,6 +10,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 {
     private const int TooltipMaxLength = 63;
     private const int PollIntervalMs = 60_000;
+    private const string AppDisplayName = "Alerts monitor";
 
     private readonly NotifyIcon _notifyIcon;
     private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(20) };
@@ -65,7 +66,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _notifyIcon = new NotifyIcon
         {
             Icon = _unknownIcon,
-            Text = "TrayAlarmWatcher",
+            Text = AppDisplayName,
             ContextMenuStrip = contextMenu,
             Visible = true
         };
@@ -83,7 +84,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
             _notifyIcon.ShowBalloonTip(
                 5000,
-                "TrayAlarmWatcher",
+                AppDisplayName,
                 $"Конфігурацію не знайдено або відсутній apiKey.\nЗаповніть {AppConfig.FilePath}",
                 ToolTipIcon.Warning);
             return;
@@ -105,7 +106,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
             _notifyIcon.ShowBalloonTip(
                 8000,
-                "TrayAlarmWatcher",
+                AppDisplayName,
                 "Оберіть населений пункт для моніторингу: правою кнопкою на іконці → \"Обрати район/місто\".",
                 ToolTipIcon.Info);
             return;
@@ -232,7 +233,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         _notifyIcon.ShowBalloonTip(
             5000,
-            "TrayAlarmWatcher",
+            AppDisplayName,
             $"Регіон змінено на \"{region.RegionName}\". Оновлюю статус...",
             ToolTipIcon.Info);
 
@@ -293,12 +294,12 @@ public sealed class TrayApplicationContext : ApplicationContext
         // понизилась до Yellow, а вже потім до Calm.
         if (newStatus == AlarmStatus.Alarm && !_wasFullAlarm)
         {
-            _notifyIcon.ShowBalloonTip(10000, "TrayAlarmWatcher", "Оголошено повітряну тривогу", ToolTipIcon.Warning);
+            _notifyIcon.ShowBalloonTip(10000, AppDisplayName, "Оголошено повітряну тривогу", ToolTipIcon.Warning);
             _wasFullAlarm = true;
         }
         else if (newStatus == AlarmStatus.Calm && _wasFullAlarm)
         {
-            _notifyIcon.ShowBalloonTip(10000, "TrayAlarmWatcher", "Відбій повітряної тривоги", ToolTipIcon.Info);
+            _notifyIcon.ShowBalloonTip(10000, AppDisplayName, "Відбій повітряної тривоги", ToolTipIcon.Info);
             _wasFullAlarm = false;
         }
     }
