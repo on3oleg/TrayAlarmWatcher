@@ -95,7 +95,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _pollTimer.Start();
     }
 
-    private async void OnPollTimerTick(object? sender, EventArgs e) => await RefreshStatusAsync();
+    private async void OnPollTimerTick(object? sender, EventArgs e) => await SafeRefreshStatusAsync();
 
     private async Task InitializeAsync(AppConfig config)
     {
@@ -112,7 +112,7 @@ public sealed class TrayApplicationContext : ApplicationContext
             return;
         }
 
-        await RefreshStatusAsync();
+        await SafeRefreshStatusAsync();
     }
 
     private async Task PrefetchRegionsTreeAsync(string apiKey)
@@ -237,7 +237,7 @@ public sealed class TrayApplicationContext : ApplicationContext
             $"Регіон змінено на \"{region.RegionName}\". Оновлюю статус...",
             ToolTipIcon.Info);
 
-        _ = RefreshStatusAsync();
+        _ = SafeRefreshStatusAsync();
     }
 
     private void UpdateRegionMenuChecks()
@@ -254,7 +254,22 @@ public sealed class TrayApplicationContext : ApplicationContext
         }
     }
 
-    private async void OnRefreshClicked(object? sender, EventArgs e) => await RefreshStatusAsync();
+    private async void OnRefreshClicked(object? sender, EventArgs e) => await SafeRefreshStatusAsync();
+
+    // async void-обробники подій (таймер, клік меню) не мають власного try/catch у виклику -
+    // будь-який виняток, що вирветься звідси, WinForms не ловить і завалює весь процес.
+    // Тому RefreshStatusAsync ніколи не має кидати виняток напряму - лише через цю обгортку.
+    private async Task SafeRefreshStatusAsync()
+    {
+        try
+        {
+            await RefreshStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            FileLogger.LogError($"Непередбачений виняток під час оновлення статусу: {ex}");
+        }
+    }
 
     private async Task RefreshStatusAsync()
     {
@@ -271,6 +286,13 @@ public sealed class TrayApplicationContext : ApplicationContext
             var checker = new AlarmStatusChecker(new AlertsApiClient(_httpClient));
             _snapshot = await checker.CheckAsync(_config.ApiKey, _config.RegionId);
             NotifyOnStatusChange(_snapshot.Status);
+        }
+        catch (Exception ex)
+        {
+            // AlarmStatusChecker.CheckAsync вже ловить власні HTTP-помилки й ніколи не мав би
+            // кидати виняток далі - але про всяк випадок, щоб застосунок точно не впав.
+            FileLogger.LogError($"Непередбачена помилка перевірки статусу (regionId={_config.RegionId}): {ex}");
+            _snapshot = new AlarmStatusSnapshot(AlarmStatus.Unknown, DateTime.Now, ex.Message);
         }
         finally
         {
